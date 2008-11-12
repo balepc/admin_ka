@@ -1,0 +1,54 @@
+<div id="container">  
+  <%%= error_messages_for :<%= singular_name %> %>
+  <% if reflection %>
+  <%%= error_messages_for :<%= reflection %> %>
+  <% end %>
+  <%% form_for(@<%= singular_name %>, :url=> admin_<%= singular_name %>_path(@<%= singular_name %>) , :html=> {:class=>'wufoo'}) do |f| %>  
+        <%%= f.hidden_field 'id', :value=>@<%= singular_name %>.id %>
+    <ul>        
+      <%% controller.class.view_entity.fields.each do |field, index| %>
+            <%% if field.lookup? %>
+                  <%%= custom_select_tag(@<%= singular_name %>, field) %>
+            <%% elsif field.boolean? %>
+                  <%%= custom_checkbox_field(@<%= singular_name %>, field) %>  
+            <%% elsif field.date? %>
+                  <%%= custom_date_field(@<%= singular_name %>, field) %>
+            <%% elsif field.text? %>
+                  <%%= custom_text_area(@<%= singular_name %>, field) %>  
+            <%% else %>
+                  <%%= custom_text_field(@<%= singular_name %>, field) %>
+            <%% end %>
+      <%% end %>
+      
+      <%% controller.class.view_entity.reflections.each do |reflection| %>
+        <%%= custom_delimeter(reflection.name.to_s.humanize, (link_to image_tag('/images/admin/add.png'), admin_<%= singular_name %>_path(@<%= singular_name %>, "add_#{reflection.name.to_s.singularize}".to_sym=>true), :method=>(controller.action_name == 'new' ? :post : :put), :alt => 'add')) %>
+        <%% @<%= singular_name %>.send(reflection.name).each_with_index do |item, index| %>
+            <%%= hidden_field "#{reflection.form_name}[#{index}]", :id, :value=>item.id %>
+            <li id="list_elemets">
+              <%% reflection.fields.each do |field |%>
+              <span class="fval">                
+                <%% if field.lookup? %>
+                      <%%= custom_sub_select_tag(item, field, index) %>
+                <%% elsif field.boolean? %>
+                      <%%= custom_sub_checkbox_field(item, field, index) %>
+                <%% elsif field.date? %>
+                      <%%= custom_sub_date_field(item, field, index) %>
+                <%% else %>
+                      <%%= custom_sub_text_field(item, field, index) %>
+                <%% end %>
+                <label><%%= field.title %></label>
+              </span>  
+              <%% end %>
+              <span>
+                <%% if item.id %>
+                    <%%= link_to image_tag('/images/admin/delete.png'), url_for(:controller=>reflection.name.to_s, :action=>'destroy', :id=>item), :method=>:delete, :alt => 'delete', :confirm => "Are you sure?" %>
+                <%% end %>
+              </span>
+            </li>
+        <%% end %>
+      <%% end %>
+  
+    <%%= custom_submit %>
+    </ul>
+  <%% end %>
+</div>

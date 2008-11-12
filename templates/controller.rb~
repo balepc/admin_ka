@@ -1,0 +1,130 @@
+class Admin::<%= controller_class_name %>Controller < Admin::SecureController 
+  
+  layout 'admin_application'
+  
+  adminka :<%= singular_name %> do |index_entity, view_entity|
+    index_entity.excluded_fields =   [:created_at, :updated_at, :id]
+#    index_entity.titles = {:password => 'User password'}    
+    
+    view_entity.excluded_fields =   [:created_at, :updated_at, :id]
+#    view_entity.additional_fields =   [:password]
+    
+#    view_entity.lookup_fields_titles = {:company => :business_name, :manager=>:login}
+#    view_entity.lookup_contents = {:manager => User.managers}
+#    view_entity.has_many_association =    {:cart_items => [:product_id, :price, :amount]}
+  end 
+  
+  def index
+    sort_init "#{<%= class_name %>.table_name}.id", "desc"
+    sort_update    
+    retrieve_query
+    
+    @<%= plural_name %> = <%= class_name %>.paginate(:page=>params[:page], :per_page=>50, 
+      :order => sort_clause, :conditions => @query.statement)
+  end
+
+  def new    
+    @<%= singular_name %> = <%= class_name %>.new
+
+    respond_to do |format|
+      format.html # new.html.erb
+      format.xml  { render :xml => @<%= singular_name %> }
+    end
+  end
+
+  def edit
+    @<%= singular_name %> = <%= class_name %>.find(params[:id])
+  end
+
+  def create
+    @<%= singular_name %> = <%= class_name %>.new(params[:<%= singular_name %>])    
+    <% if reflection %>
+      if params[:add_<%= reflection.singularize %>]
+        @<%= singular_name %>.<%= reflection.pluralize %> << <%= reflection.classify %>.create
+      end
+    <% end %> 
+    
+    <% if reflection %> 
+    if params[:add_<%= reflection.singularize %>].blank? and @<%= singular_name %>.save and update_has_many_models(params)
+    <% else %>
+    if @<%= singular_name %>.save
+    <% end %> 
+      flash[:notice] = '<%= class_name %> was successfully created.'
+      redirect_to admin_<%= plural_name %>_path
+    else
+      render :action => "new"
+    end 
+  end
+
+  def update
+    @<%= singular_name %> = <%= class_name %>.find(params[:id])
+    <% if reflection %>
+      if params[:add_<%= reflection %>]
+        @<%= singular_name %>.<%= reflection.pluralize %> << <%= reflection.classify %>.create
+      end
+    <% end %> 
+    
+    <% if reflection %> 
+    if params[:add_<%= reflection.singularize %>].blank? and @<%= singular_name %>.update_attributes(params[:<%= singular_name %>]) and update_has_many_models(params)
+    <% else %>
+    if @<%= singular_name %>.update_attributes(params[:<%= singular_name %>])
+    <% end %> 
+      flash[:notice] = '<%= class_name %> was successfully updated.'
+      redirect_to admin_<%= plural_name %>_path
+    else
+      render :action => "edit"
+    end
+  end
+
+  def destroy
+    if params[:ids] and params[:ids].is_a? Array
+      params[:ids].each do |id|
+        @<%= singular_name %> = <%= class_name %>.find(id)
+        @<%= singular_name %>.destroy
+      end
+    elsif params[:id]
+      @<%= singular_name %> = <%= class_name %>.find(params[:id])
+      @<%= singular_name %>.destroy
+    end
+
+    respond_to do |format|
+      format.html { redirect_to(admin_<%= plural_name %>_url) }
+      format.xml  { head :ok }
+    end
+  end
+  
+  ############################################################
+  <% if reflection %>
+  def update_has_many_models(params)
+    params[:<%= reflection %>].to_a.each do |index, item|
+      if item[:id].blank?
+        @<%= reflection%> = <%= reflection.classify %>.create(item)
+        return false unless @<%= singular_name %>.<%= reflection.pluralize %> << @<%= reflection %>
+      else
+        @<%= reflection %> = @<%= singular_name %>.<%= reflection.pluralize %>.to_a.find{|i| i.id == item[:id].to_i}
+        return false unless @<%= reflection %> and @<%= reflection %>.update_attributes(item) 
+      end
+    end
+    true
+  end
+  <% end %>
+
+  def retrieve_query    
+    if params[:set_filter] || session[:<%= plural_name %>_query].nil?
+      # Give it a name, required to be valid      
+      @query = Query.new(<%= class_name %>, self.class.index_entity, {})
+      if params[:fields] and params[:fields].is_a? Array
+        params[:fields].each do |field|          
+          @query.add_filter(field, params[:operators][field], params[:values][field])          
+        end
+      else
+        @query.available_filters.keys.each do |field|
+          @query.add_short_filter(field, params[field]) if params[field]
+        end
+      end
+      session[:<%= plural_name %>_query] = {:filters => @query.filters}
+    else      
+      @query ||= Query.new(<%= class_name %>, self.class.index_entity, session[:<%= plural_name %>_query][:filters])
+    end   
+  end
+end

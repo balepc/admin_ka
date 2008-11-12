@@ -1,0 +1,38 @@
+<div id="content">
+  <div class="contextual">
+    
+    <%%= link_to 'New', new_admin_<%= singular_name %>_path, :class=>"icon icon-edit" %>    
+    <%%= link_to 'Delete', '#', :onclick=>"if (confirm('Are you sure ?')) { submitForm('index_table_form') }; return false;", :class=>'icon icon-del' %>
+    
+  </div>
+  <h2><%%= controller.controller_name.humanize %></h2>
+  <div id="query_form">
+    <%%= render :partial=>'admin/general/filters', :locals => {:submit_path => admin_<%= plural_name %>_path} %>
+  </div>
+  
+  <%% form_tag url_for(:controller=>'<%= plural_name %>', :action=>'destroy'), {:id=>'index_table_form'} do %>
+    <table class="list issues">
+      <thead>
+        <tr>
+          <th><%%= link_to image_tag("/images/admin/toggle_check.png"), {}, :onclick => 'toggleIssuesSelection(this.up("form")); return false;',
+              :title => "button_check_all/button_uncheck_all" %>
+          </th>          
+          <%% controller.class.index_entity.fields.each do |field| %>
+              <%%= column_header(field, <%= class_name %>) %>        
+          <%% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <%% @<%= plural_name %>.each do |p| %>
+          <tr id="issue-<%%= p.id %>" class="issue hascontextmenu <%%= cycle('odd', 'even') %>">
+            <td class="checkbox"><input name="ids[]" type="checkbox" value="<%%= p.id %>" /></td>
+            <%% controller.class.index_entity.fields.each do |field| %>              
+              <td class="<%%= field.name %>"><%%= column_content(p,field) %></td>
+            <%% end %>
+          </tr>            
+        <%% end %>
+      </tbody>
+    </table>
+  <%% end %>
+  <p class="pagination"><%%= will_paginate @<%= plural_name %> %></p>
+</div>

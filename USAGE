@@ -1,0 +1,11 @@
+admin_ka is extended scaffold generator.
+
+It generates a grid for a model with filtering, advanced search, ordering.
+
+
+Usage:
+script/generate admin_ka    
+Puts general files to project
+
+script/generate admin_ka Model
+Generates a controller for Model
